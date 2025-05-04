@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+
+  sensor-generator:
+    build: ./sensor_generator
+    image: sensor_generator
+    container_name: sensor_generator
+    depends_on:
+      - mosquitto
+      - mongo
+    restart: on-failure
+
+  edge-processor:
+    build: ./edge_processor
+    image: edge_processor
+    container_name: edge_processor
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./model/motor_model_xgb.joblib:/app/motor_model_xgb.joblib
+      - ./model/label_mapping_xgb.joblib:/app/label_mapping_xgb.joblib
+    restart: on-failure
+
+  streamlit-dashboard:
+    build: ./streamlit_dashboard
+    image: streamlit_dashboard
+    container_name: streamlit_dashboard
+    ports:
+      - "8501:8501"
+    depends_on:
+      - mosquitto
+      - mongo
+    restart: on-failure
+volumes:
+  mongo_data:
+

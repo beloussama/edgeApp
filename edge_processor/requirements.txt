@@ -1,0 +1,5 @@
+paho-mqtt
+joblib
+pandas
+scikit-learn
+xgboost
